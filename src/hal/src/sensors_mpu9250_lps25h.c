@@ -94,6 +94,24 @@
 #define GYRO_VARIANCE_THRESHOLD_Y   (GYRO_VARIANCE_BASE)
 #define GYRO_VARIANCE_THRESHOLD_Z   (GYRO_VARIANCE_BASE)
 
+// accelerometer calibration values
+// raw sensor output is measured in G not m/s² 
+#define CAL_ACC0_XOFF   -0.0554f/9.81f
+#define CAL_ACC0_XSCALE  0.9967f
+#define CAL_ACC0_YOFF    0.0517f/9.81f
+#define CAL_ACC0_YSCALE  0.9969f
+#define CAL_ACC0_ZOFF   -0.5714f/9.81f
+#define CAL_ACC0_ZSCALE  0.9908f
+
+// use the following values to get an uncalibrated accelerometer
+// e.g. to do measurements for calibration
+/*#define CAL_ACC0_XOFF    0.0f
+#define CAL_ACC0_XSCALE  1.0f
+#define CAL_ACC0_YOFF    0.0f
+#define CAL_ACC0_YSCALE  1.0f
+#define CAL_ACC0_ZOFF    0.0f
+#define CAL_ACC0_ZSCALE  1.0f*/
+
 typedef struct
 {
   Axis3f     bias;
@@ -166,7 +184,6 @@ static void sensorsCalculateVarianceAndMean(BiasObj* bias, Axis3f* varOut, Axis3
 static void sensorsCalculateBiasMean(BiasObj* bias, Axis3i32* meanOut);
 static void sensorsAddBiasValue(BiasObj* bias, int16_t x, int16_t y, int16_t z);
 static bool sensorsFindBiasValue(BiasObj* bias);
-static void sensorsAccAlignToGravity(Axis3f* in, Axis3f* out);
 
 bool sensorsMpu9250Lps25hReadGyro(Axis3f *gyro)
 {
@@ -289,7 +306,6 @@ void processMagnetometerMeasurements(const uint8_t *buffer)
 
 void processAccGyroMeasurements(const uint8_t *buffer)
 {
-  Axis3f accScaled;
   // Note the ordering to correct the rotated 90º IMU coordinate system
   accelRaw.y = (((int16_t) buffer[0]) << 8) | buffer[1];
   accelRaw.x = (((int16_t) buffer[2]) << 8) | buffer[3];
@@ -309,15 +325,18 @@ void processAccGyroMeasurements(const uint8_t *buffer)
      processAccScale(accelRaw.x, accelRaw.y, accelRaw.z);
   }
 
+  // apply calibration to gyroscope:
+  // (1) substract bias (2) low pass filter
   sensorData.gyro.x = -(gyroRaw.x - gyroBias.x) * SENSORS_DEG_PER_LSB_CFG;
   sensorData.gyro.y =  (gyroRaw.y - gyroBias.y) * SENSORS_DEG_PER_LSB_CFG;
   sensorData.gyro.z =  (gyroRaw.z - gyroBias.z) * SENSORS_DEG_PER_LSB_CFG;
   applyAxis3fLpf((lpf2pData*)(&gyroLpf), &sensorData.gyro);
 
-  accScaled.x = -(accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;
-  accScaled.y =  (accelRaw.y) * SENSORS_G_PER_LSB_CFG / accScale;
-  accScaled.z =  (accelRaw.z) * SENSORS_G_PER_LSB_CFG / accScale;
-  sensorsAccAlignToGravity(&accScaled, &sensorData.acc);
+  // apply calibration to accelerometer:
+  // (1) scale & bias correction (2) low pass filter
+  sensorData.acc.x =  (-(accelRaw.x) * SENSORS_G_PER_LSB_CFG - CAL_ACC0_XOFF) * CAL_ACC0_XSCALE;
+  sensorData.acc.y =  ((accelRaw.y) * SENSORS_G_PER_LSB_CFG - CAL_ACC0_YOFF) * CAL_ACC0_YSCALE;
+  sensorData.acc.z =  ((accelRaw.z) * SENSORS_G_PER_LSB_CFG - CAL_ACC0_ZOFF) * CAL_ACC0_ZSCALE;
   applyAxis3fLpf((lpf2pData*)(&accLpf), &sensorData.acc);
 }
 
@@ -850,31 +869,6 @@ void __attribute__((used)) EXTI13_Callback(void)
   {
     portYIELD();
   }
-}
-
-/**
- * Compensate for a miss-aligned accelerometer. It uses the trim
- * data gathered from the UI and written in the config-block to
- * rotate the accelerometer to be aligned with gravity.
- */
-static void sensorsAccAlignToGravity(Axis3f* in, Axis3f* out)
-{
-  Axis3f rx;
-  Axis3f ry;
-
-  // Rotate around x-axis
-  rx.x = in->x;
-  rx.y = in->y * cosRoll - in->z * sinRoll;
-  rx.z = in->y * sinRoll + in->z * cosRoll;
-
-  // Rotate around y-axis
-  ry.x = rx.x * cosPitch - rx.z * sinPitch;
-  ry.y = rx.y;
-  ry.z = -rx.x * sinPitch + rx.z * cosPitch;
-
-  out->x = ry.x;
-  out->y = ry.y;
-  out->z = ry.z;
 }
 
 void sensorsMpu9250Lps25hSetAccMode(accModes accMode)
