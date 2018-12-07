@@ -96,12 +96,22 @@
 
 // accelerometer calibration values
 // raw sensor output is measured in G not m/s² 
-#define CAL_ACC0_XOFF   -0.0554f/9.81f
+
+/* Johannes Drone */
+/*#define CAL_ACC0_XOFF   -0.0554f/9.81f
 #define CAL_ACC0_XSCALE  0.9967f
 #define CAL_ACC0_YOFF    0.0517f/9.81f
 #define CAL_ACC0_YSCALE  0.9969f
 #define CAL_ACC0_ZOFF   -0.5714f/9.81f
-#define CAL_ACC0_ZSCALE  0.9908f
+#define CAL_ACC0_ZSCALE  0.9908f*/
+
+/* Main Drone */
+#define CAL_ACC0_XOFF   -0.0533f/9.81f
+#define CAL_ACC0_XSCALE  0.9979f
+#define CAL_ACC0_YOFF    0.0825f/9.81f
+#define CAL_ACC0_YSCALE  0.9995f
+#define CAL_ACC0_ZOFF    1.3338f/9.81f
+#define CAL_ACC0_ZSCALE  0.9964f
 
 // use the following values to get an uncalibrated accelerometer
 // e.g. to do measurements for calibration
