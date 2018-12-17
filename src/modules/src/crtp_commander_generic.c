@@ -32,6 +32,7 @@
 #include "commander.h"
 #include "param.h"
 #include "crtp.h"
+#include "math3d.h"
 #include "num.h"
 #include "quatcompress.h"
 #include "FreeRTOS.h"
@@ -318,7 +319,7 @@ static void fullStateDecoder(setpoint_t *setpoint, uint8_t type, const void *dat
   ASSERT(datalen == sizeof(struct fullStatePacket_s));
 
   #define UNPACK(x) \
-  setpoint->mode.x = modeAbs; \
+  setpoint->mode.x = modeDisable; \
   setpoint->position.x = values->x / 1000.0f; \
   setpoint->velocity.x = (values->v ## x) / 1000.0f; \
   setpoint->acceleration.x = (values->a ## x) / 1000.0f; \
@@ -333,11 +334,22 @@ static void fullStateDecoder(setpoint_t *setpoint, uint8_t type, const void *dat
   setpoint->attitudeRate.pitch = millirad2deg * values->ratePitch;
   setpoint->attitudeRate.yaw = millirad2deg * values->rateYaw;
 
+  // decompress the quaternion and convert to euler angles
   quatdecompress(values->quat, (float *)&setpoint->attitudeQuaternion.q0);
-  setpoint->mode.quat = modeAbs;
-  setpoint->mode.roll = modeDisable;
-  setpoint->mode.pitch = modeDisable;
-  setpoint->mode.yaw = modeDisable;
+  struct quat setpoint_quat = mkquat(setpoint->attitudeQuaternion.x, setpoint->attitudeQuaternion.y, setpoint->attitudeQuaternion.z, setpoint->attitudeQuaternion.w);
+  struct vec rpy = quat2rpy(setpoint_quat);
+
+  // roll
+  setpoint->attitude.roll = degrees(rpy.x);
+  setpoint->mode.roll = modeAbs;
+
+  // pitch
+  setpoint->attitude.pitch = degrees(rpy.y);
+  setpoint->mode.pitch = modeAbs;
+
+  // yaw
+  setpoint->attitude.yaw = degrees(rpy.z);
+  setpoint->mode.yaw = modeAbs;
 }
 
 /* positionDecoder

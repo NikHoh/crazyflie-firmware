@@ -9,6 +9,7 @@
 
 #include "log.h"
 #include "param.h"
+#include "math3d.h"
 
 #define ATTITUDE_UPDATE_DT    (float)(1.0f/ATTITUDE_RATE)
 
@@ -80,6 +81,11 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
       rateDesired.pitch = setpoint->attitudeRate.pitch;
       attitudeControllerResetPitchAttitudePID();
     }
+
+    // feed the set attitude rate as an additive term into the rate controller
+    rateDesired.roll += setpoint->attitudeRate.roll;
+    rateDesired.pitch += setpoint->attitudeRate.roll;
+    rateDesired.yaw += setpoint->attitudeRate.yaw;
 
     // TODO: Investigate possibility to subtract gyro drift.
     attitudeControllerCorrectRatePID(sensors->gyro.x, -sensors->gyro.y, sensors->gyro.z,
