@@ -105,13 +105,21 @@
 #define CAL_ACC0_ZOFF   -0.5714f/9.81f
 #define CAL_ACC0_ZSCALE  0.9908f*/
 
-/* Main Drone */
+//Maurice Drone
+#define CAL_ACC0_XOFF   -0.0266f/9.81f
+#define CAL_ACC0_XSCALE  0.9970f
+#define CAL_ACC0_YOFF    0.0652f/9.81f
+#define CAL_ACC0_YSCALE  0.9984f
+#define CAL_ACC0_ZOFF    0.1933f/9.81f
+#define CAL_ACC0_ZSCALE  0.9942f
+
+/* Main Drone */ /*
 #define CAL_ACC0_XOFF   -0.0533f/9.81f
 #define CAL_ACC0_XSCALE  0.9979f
 #define CAL_ACC0_YOFF    0.0825f/9.81f
 #define CAL_ACC0_YSCALE  0.9995f
 #define CAL_ACC0_ZOFF    1.3338f/9.81f
-#define CAL_ACC0_ZSCALE  0.9964f
+#define CAL_ACC0_ZSCALE  0.9964f*/
 
 // use the following values to get an uncalibrated accelerometer
 // e.g. to do measurements for calibration
